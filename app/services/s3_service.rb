@@ -1,6 +1,6 @@
 module  S3Service
     def initialize
-        # Set up the following environment variables in your .env file for S3 connectivity:
+        # TODO: Set up the following environment variables in your .env file for S3 connectivity:
         # S3_BUCKET_NAME
         # S3_REGION_NAME
         # AWS_ACCESS_KEY_ID
@@ -21,7 +21,7 @@ module  S3Service
         object_key (str): The key (path) of the object to read from S3.
     
         Returns:
-        str: The content of the file if successful, or an error message if not.
+        Response: HTTP response containing the HTTP status `code` and the content of the file if successful `body`.
         """
         # Construct the URL for the S3 object
         host = "#{@bucket_name}.s3.#{@region_name}.amazonaws.com"
@@ -38,24 +38,17 @@ module  S3Service
 
         # Send the request and handle the response
         response = http.request(request)
-    
-        if response.code.to_i == 200
-            response.body
-        else
-            "Failed to read file. Response code: #{response.code}, Response body: #{response.body}"
-        end
+        response
     end
-    
-    def write_to_s3(object_key, file_path)
+
+    def write_to_s3(object_key, base64_data)
         """
-        Writes a file to an S3 bucket.
-    
+        Writes Base64 encoded data to an S3 bucket.      
         Args:
-        object_key (str): The key (path) where the file will be stored in S3.
-        file_path (str): The path to the file on the local filesystem.
-    
+          object_key (str): The key (path) where the file will be stored in S3.
+          base64_data (str): Base64 encoded data.
         Returns:
-        str: A success message if successful, or an error message if not.
+          str: A success message if successful, or an error message if not.
         """
         # Construct the URL for the S3 object
         host = "#{@bucket_name}.s3.#{@region_name}.amazonaws.com"
@@ -65,26 +58,18 @@ module  S3Service
         http = Net::HTTP.new(uri.host, uri.port)
         http.use_ssl = true
         request = Net::HTTP::Put.new(uri.request_uri)
-        file_content = File.read(file_path)
-        request.body = file_content
-        # TODO: Adjust the Content-Type to be the type of uploaded file from the endpoint
-        request['Content-Type'] = 'image/jpeg'  
-        request['Content-Length'] = file_content.bytesize.to_s
+        request.body = base64_data
+        request['Content-Type'] = 'application/base64'
+        request['Content-Length'] = base64_data.bytesize.to_s
         request['Host'] = host
         request['x-amz-date'] = Time.now.utc.strftime('%Y%m%dT%H%M%SZ')
-        request['x-amz-content-sha256'] = Digest::SHA256.hexdigest(file_content)
+        request['x-amz-content-sha256'] = Digest::SHA256.hexdigest(base64_data)
         request['Authorization'] = authorization_header(@access_key, @secret_key, request, uri, @region_name)
 
         # Send the request and handle the response
         response = http.request(request)
-        # TODO: return the response and let client handles it wether success or fail
-        if response.code.to_i == 200
-        "File uploaded successfully."
-        else
-        "Failed to upload file. Response code: #{response.code}, Response body: #{response.body}"
-        end
-    end
-  
+        response
+    end      
     def authorization_header(access_key, secret_key, request, uri, region_name)
         """
         Generates the Authorization header for an AWS S3 request.

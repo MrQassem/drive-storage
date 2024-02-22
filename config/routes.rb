@@ -1,3 +1,8 @@
 Rails.application.routes.draw do
-  # For details on the DSL available within this file, see http://guides.rubyonrails.org/routing.html
+  get 'health/live', to: 'health_check#live'
+
+  # Namespaced routes for v1
+  namespace :v1 do
+    resources :blobs, only: [:create, :show]
+  end
 end
