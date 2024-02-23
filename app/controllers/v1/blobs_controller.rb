@@ -2,8 +2,6 @@ require 'base64'
 
 module V1
   class BlobsController < ApplicationController
-    # include S3Storage
-    # include StorageStrategy
 
     skip_before_action :verify_authenticity_token
 
@@ -84,7 +82,12 @@ module V1
       puts blob.storage_path
       if blob
         # Blob found in the database, now retrieve it from storage
-        response = STORAGE.retrieve(blob.storage_path)
+        begin
+          response = STORAGE.retrieve(blob.storage_path)
+        rescue => e
+          render json: { error: "Error retrieving blob_id #{blob.blob_id}" }, status: :bad_request
+          return
+        end
     
         # Check if the response is successful
         success = blob.storage_type == 'S3' ? response.code.to_i == 200 : !response.nil?

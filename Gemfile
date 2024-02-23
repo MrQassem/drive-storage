@@ -62,3 +62,5 @@ end
 gem 'tzinfo-data', platforms: [:mingw, :mswin, :x64_mingw, :jruby]
 
 gem "dotenv", "= 2.8.1"
+
+gem "jwt", "~> 2.8"

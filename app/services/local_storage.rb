@@ -8,7 +8,7 @@ class LocalStorage
   
     def store(path, data)
         # Construct the full storage path
-        full_path = File.join(@storage_path, sub_path)
+        full_path = File.join(@storage_path, path)
 
         # Create the directory path if it doesn't exist
         FileUtils.mkdir_p(File.dirname(full_path))
@@ -21,9 +21,9 @@ class LocalStorage
   
     def retrieve(path)
         # Construct the full storage path
-        full_path = File.join(@storage_path, sub_path)
+        full_path = File.join(@storage_path, path)
 
-        File.read(full_path)
+        File.read(path)
     end
   end
   
