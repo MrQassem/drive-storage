@@ -21,7 +21,8 @@ module V1
 
       id = body_params['id']
       data = body_params['data']
-    
+      # TODO: this user_id should be extracted from the bearer token provided, but for now user_id is 1
+      user_id=1
 
       # Check if both 'id' and 'data' are present
       if id.blank? || data.blank?
@@ -34,16 +35,33 @@ module V1
       rescue ArgumentError
         return render json: { error: 'Invalid Base64 data' }, status: :bad_request
       end
-
-      # Write data to S3
       
-      response = write_to_s3(id, data)
-      if response.code.to_i == 200
-        render json: { id: id, data: data }, status: :created
-      else
-        render json: { error: 'Blob could not be stored' }, status: 400
+      begin
+        # Write data to S3
+        storage_path="#{user_id}/#{id}"
+        response = write_to_s3(storage_path, body_params['data'])
+        
+        if response.code.to_i == 200
+          # Store metadata in the Blob model
+          Blob.create!(
+            blob_id: id, 
+            # TODO: this user_id should be extracted from the bearer token provided, but for now user_id is 1
+            user_id: user_id, 
+            storage_type: 's3',
+            storage_path: storage_path,
+            content_type: 'application/base64',
+            size: Base64.strict_decode64(body_params['data']).bytesize
+          )
+          render json: { id: id, data: data }, status: :created
+        else
+          render json: { error: 'Blob could not be stored' }, status: response.code.to_i
+        end
+      rescue ActiveRecord::RecordNotUnique => e
+        render json: { error: 'A blob with the given ID and user ID already exists.' }, status: :unprocessable_entity
+      rescue => e
+        puts e
+        render json: { error: 'Blob could not created due to some errors' }, status: :bad_request
       end
-      
     end
 
     def show
@@ -58,19 +76,27 @@ module V1
       """
 
       id = params[:id]
-      
-      response = read_from_s3(id)
-      if response.code.to_i==200
-        base64_data = response.body
-        render json: {
-          id: id,
-          data: base64_data,
-          # TODO, these are to be stored in the db upon storing to storage.
-          size: Base64.strict_decode64(base64_data).bytesize,
-          created_at: Time.now.utc.iso8601
-        }
+
+      # TODO: this user_id should be extracted from the bearer token provided, but for now user_id is 1
+      user_id= 1
+      blob = Blob.find_by(blob_id: id, user_id: user_id)
+      puts blob.storage_path
+      if blob
+        # Blob found in the database, now retrieve it from S3
+        response = read_from_s3(blob.storage_path)
+        if response.code.to_i == 200
+          base64_data = Base64.strict_encode64(response.body)
+          render json: {
+            id: blob.blob_id,
+            data: base64_data,
+            size: blob.size,
+            created_at: blob.created_at.iso8601
+          }
+        else
+          render json: { error: 'Blob not found in S3' }, status: :not_found
+        end
       else
-        render json: { error: 'Blob not found' }, status: :not_found
+        render json: { error: 'Blob not found in database' }, status: :not_found
       end
     end
   end

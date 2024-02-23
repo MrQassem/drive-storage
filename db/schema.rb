@@ -16,15 +16,16 @@ ActiveRecord::Schema.define(version: 2024_02_23_075630) do
   enable_extension "plpgsql"
 
   create_table "blobs", force: :cascade do |t|
+    t.string "blob_id", null: false
     t.string "user_id", null: false
     t.string "storage_type", null: false
     t.string "storage_path", null: false
-    t.string "original_filename", null: false
+    t.string "original_filename"
     t.string "content_type", null: false
     t.integer "size", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["user_id"], name: "index_blobs_on_user_id", unique: true
+    t.index ["user_id", "blob_id"], name: "index_blobs_on_user_id_and_blob_id", unique: true
   end
 
 end
