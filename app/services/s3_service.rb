@@ -1,14 +1,13 @@
+require 'net/http'
+require 'openssl'
+require 'uri'
+
 module  S3Service
     def initialize
-        # TODO: Set up the following environment variables in your .env file for S3 connectivity:
-        # S3_BUCKET_NAME
-        # S3_REGION_NAME
-        # AWS_ACCESS_KEY_ID
-        # AWS_SECRET_ACCESS_KEY
-        @bucket_name = ""
-        @region_name = ""
-        @access_key = ""
-        @secret_key = ""
+        @bucket_name = ENV['BUCKET_NAME']
+        @region_name = ENV['REGION_NAME']
+        @access_key = ENV['ACCESS_KEY']
+        @secret_key = ENV['SECRET_KEY']
     
     end
     
