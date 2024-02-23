@@ -13,9 +13,26 @@ services:
     depends_on:
       - db
     container_name: drive-app
+    networks:
+      - mynetwork
+
   db:
     image: postgres:alpine3.15
     environment:
       POSTGRES_PASSWORD: example
+      POSTGRES_USER: postgres
+      POSTGRES_HOST: db
     container_name: drive-db
+    networks:
+      - mynetwork
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
 
+networks:
+  mynetwork:
+    driver: bridge # Use the bridge driver for simplicity
+
+volumes:
+  pgdata:

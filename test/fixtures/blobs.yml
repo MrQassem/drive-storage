@@ -1,0 +1,17 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  user_id: MyString
+  storage_type: MyString
+  storage_path: MyString
+  original_filename: MyString
+  content_type: MyString
+  size: 1
+
+two:
+  user_id: MyString
+  storage_type: MyString
+  storage_path: MyString
+  original_filename: MyString
+  content_type: MyString
+  size: 1
