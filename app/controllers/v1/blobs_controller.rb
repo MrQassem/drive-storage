@@ -2,7 +2,8 @@ require 'base64'
 
 module V1
   class BlobsController < ApplicationController
-    include S3Service
+    # include S3Storage
+    # include StorageStrategy
 
     skip_before_action :verify_authenticity_token
 
@@ -37,9 +38,9 @@ module V1
       end
       
       begin
-        # Write data to S3
+        # store data to storage
         storage_path="#{user_id}/#{id}"
-        response = write_to_s3(storage_path, body_params['data'])
+        STORAGE.store(storage_path, body_params['data'])
         
         if response.code.to_i == 200
           # Store metadata in the Blob model
@@ -56,7 +57,7 @@ module V1
         else
           render json: { error: 'Blob could not be stored' }, status: response.code.to_i
         end
-      rescue ActiveRecord::RecordNotUnique => e
+      rescue ActiveRecord::RecordNotUnique, ActiveRecord::RecordInvalid  => e
         render json: { error: 'A blob with the given ID and user ID already exists.' }, status: :unprocessable_entity
       rescue => e
         puts e
@@ -82,10 +83,14 @@ module V1
       blob = Blob.find_by(blob_id: id, user_id: user_id)
       puts blob.storage_path
       if blob
-        # Blob found in the database, now retrieve it from S3
-        response = read_from_s3(blob.storage_path)
-        if response.code.to_i == 200
-          base64_data = Base64.strict_encode64(response.body)
+        # Blob found in the database, now retrieve it from storage
+        response = STORAGE.retrieve(blob.storage_path)
+    
+        # Check if the response is successful
+        success = blob.storage_type == 'S3' ? response.code.to_i == 200 : !response.nil?
+    
+        if success
+          base64_data = Base64.strict_encode64(blob.storage_type == 'S3' ? response.body : response)
           render json: {
             id: blob.blob_id,
             data: base64_data,
@@ -93,10 +98,10 @@ module V1
             created_at: blob.created_at.iso8601
           }
         else
-          render json: { error: 'Blob not found in S3' }, status: :not_found
+          render json: { error: "Blob not found in #{blob.storage_type}" }, status: :not_found
         end
       else
-        render json: { error: 'Blob not found in database' }, status: :not_found
+        render json: { error: 'Blob not found' }, status: :not_found
       end
     end
   end

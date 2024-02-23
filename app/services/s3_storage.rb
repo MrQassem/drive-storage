@@ -2,7 +2,8 @@ require 'net/http'
 require 'openssl'
 require 'uri'
 
-module  S3Service
+class  S3Storage
+    include StorageStrategy
     def initialize
         @bucket_name = ENV['BUCKET_NAME']
         @region_name = ENV['REGION_NAME']
@@ -12,19 +13,19 @@ module  S3Service
     end
     
   
-    def read_from_s3(object_key)
+    def retrieve(blob_id)
         """
         Reads a file from an S3 bucket.
     
         Args:
-        object_key (str): The key (path) of the object to read from S3.
+        blob_id (str): The key (path) of the object to read from S3.
     
         Returns:
         Response: HTTP response containing the HTTP status `code` and the content of the file if successful `body`.
         """
         # Construct the URL for the S3 object
         host = "#{@bucket_name}.s3.#{@region_name}.amazonaws.com"
-        uri = URI.parse("https://#{host}/#{object_key}")
+        uri = URI.parse("https://#{host}/#{blob_id}")
 
         # Set up the HTTP GET request
         http = Net::HTTP.new(uri.host, uri.port)
@@ -40,29 +41,29 @@ module  S3Service
         response
     end
 
-    def write_to_s3(object_key, base64_data)
+    def store(blob_id, data)
         """
         Writes Base64 encoded data to an S3 bucket.      
         Args:
-          object_key (str): The key (path) where the file will be stored in S3.
-          base64_data (str): Base64 encoded data.
+          blob_id (str): The key (path) where the file will be stored in S3.
+          data (str): Base64 encoded data.
         Returns:
           str: A success message if successful, or an error message if not.
         """
         # Construct the URL for the S3 object
         host = "#{@bucket_name}.s3.#{@region_name}.amazonaws.com"
-        uri = URI.parse("https://#{host}/#{object_key}")
+        uri = URI.parse("https://#{host}/#{blob_id}")
 
         # Set up the HTTP PUT request
         http = Net::HTTP.new(uri.host, uri.port)
         http.use_ssl = true
         request = Net::HTTP::Put.new(uri.request_uri)
-        request.body = base64_data
+        request.body = data
         request['Content-Type'] = 'application/base64'
-        request['Content-Length'] = base64_data.bytesize.to_s
+        request['Content-Length'] = data.bytesize.to_s
         request['Host'] = host
         request['x-amz-date'] = Time.now.utc.strftime('%Y%m%dT%H%M%SZ')
-        request['x-amz-content-sha256'] = Digest::SHA256.hexdigest(base64_data)
+        request['x-amz-content-sha256'] = Digest::SHA256.hexdigest(data)
         request['Authorization'] = authorization_header(@access_key, @secret_key, request, uri, @region_name)
 
         # Send the request and handle the response
