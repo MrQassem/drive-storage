@@ -28,9 +28,27 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  ftp:
+    image: fauria/vsftpd
+    container_name: drive-ftp
+    environment:
+      - FTP_USER=ftp
+      - FTP_PASS=ftppassword
+      - PASV_ADDRESS=127.0.0.1
+      - PASV_MIN_PORT=30000
+      - PASV_MAX_PORT=30009
+    ports:
+      - "21:21"
+      - "30000-30009:30000-30009"
+    volumes:
+      - ftp_data:/home/storage
+    networks:
+      - mynetwork
+
 networks:
   mynetwork:
     driver: bridge # Use the bridge driver for simplicity
 
 volumes:
   pgdata:
+  ftp_data:

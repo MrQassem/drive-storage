@@ -63,3 +63,5 @@ gem 'tzinfo-data', platforms: [:mingw, :mswin, :x64_mingw, :jruby]
 
 
 gem "jwt", "~> 2.8"
+
+gem "net-ftp", "~> 0.1.4"
