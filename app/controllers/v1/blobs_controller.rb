@@ -20,8 +20,8 @@ module V1
 
       id = body_params['id']
       data = body_params['data']
-      # TODO: this user_id should be extracted from the bearer token provided, but for now user_id is 1
-      user_id=1
+      
+      user_id=@current_user_id
 
       # Check if both 'id' and 'data' are present
       if id.blank? || data.blank?
@@ -76,22 +76,23 @@ module V1
 
       id = params[:id]
 
-      # TODO: this user_id should be extracted from the bearer token provided, but for now user_id is 1
-      user_id= 1
+      user_id = @current_user_id
       blob = Blob.find_by(blob_id: id, user_id: user_id)
       puts blob.storage_path
       if blob
         # Blob found in the database, now retrieve it from storage
         begin
           response = STORAGE.retrieve(blob.storage_path)
+          puts response
         rescue => e
+          puts e
           render json: { error: "Error retrieving blob_id #{blob.blob_id}" }, status: :bad_request
           return
         end
     
         # Check if the response is successful
         success = blob.storage_type == 'S3' ? response.code.to_i == 200 : !response.nil?
-    
+            
         if success
           base64_data = Base64.strict_encode64(blob.storage_type == 'S3' ? response.body : response)
           render json: {
