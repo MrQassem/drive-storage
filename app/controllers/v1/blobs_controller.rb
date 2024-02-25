@@ -46,7 +46,7 @@ module V1
             blob_id: id, 
             # TODO: this user_id should be extracted from the bearer token provided, but for now user_id is 1
             user_id: user_id, 
-            storage_type: 's3',
+            storage_type: ENV['STORAGE_STRATEGY'],
             storage_path: storage_path,
             content_type: 'application/base64',
             size: Base64.strict_decode64(body_params['data']).bytesize
@@ -78,8 +78,9 @@ module V1
 
       user_id = @current_user_id
       blob = Blob.find_by(blob_id: id, user_id: user_id)
-      puts blob.storage_path
       if blob
+        puts 'blob.storage_path'
+        puts blob.storage_path
         # Blob found in the database, now retrieve it from storage
         begin
           response = STORAGE.retrieve(blob.storage_path)
