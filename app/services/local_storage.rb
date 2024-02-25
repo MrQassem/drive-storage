@@ -7,23 +7,31 @@ class LocalStorage
     end
   
     def store(path, data)
-        # Construct the full storage path
-        full_path = File.join(@storage_path, path)
+        begin
 
-        # Create the directory path if it doesn't exist
-        FileUtils.mkdir_p(File.dirname(full_path))
+            # Construct the full storage path
+            full_path = File.join(@storage_path, path)
 
-        # Store the file
-        File.open(full_path, 'wb') do |file|
-        file.write(data)
+            # Create the directory path if it doesn't exist
+            FileUtils.mkdir_p(File.dirname(full_path))
+
+            # Store the file
+            File.open(full_path, 'wb') do |file|
+            file.write(data)
+            puts "File written to #{full_path}"  # Debugging output
+            puts "File exists? #{File.exist?(full_path)}"  # Debugging output
+        rescue => e
+            puts "Error writing file: #{e.message}"  # Debugging output
+        end
+  
         end
     end
   
     def retrieve(path)
         # Construct the full storage path
         full_path = File.join(@storage_path, path)
-
-        File.read(path)
+        return nil unless File.exist?(full_path)
+        File.read(full_path)
     end
   end
   
